@@ -4,35 +4,16 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const QUESTIONS_PROMPT = `You are a business consultant. A user has described their problem:
+const QUESTIONS_PROMPT = `Business problem: "{problem}"
 
-"{problem}"
+Return exactly 5 clarifying questions as a JSON array. No other text.
+Example: ["Q1?", "Q2?", "Q3?", "Q4?", "Q5?"]`;
 
-Generate exactly 5 clarifying questions to better understand:
-1. The scope and impact of the problem
-2. Current attempts to solve it
-3. Available resources/constraints
-4. Success criteria
-5. Timeline urgency
+const RECOMMENDATIONS_PROMPT = `Problem: {problem}
+Context: {qa_pairs}
 
-Return ONLY a JSON array of strings, no other text. Example:
-["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]`;
-
-const RECOMMENDATIONS_PROMPT = `You are a business consultant. Based on:
-
-Problem: {problem}
-
-Clarifying Questions and Answers:
-{qa_pairs}
-
-Provide actionable recommendations. Return ONLY valid JSON in this exact format, no other text:
-{
-  "summary": "1-2 sentence problem summary",
-  "quickWins": ["action1", "action2", "action3"],
-  "strategic": ["action1", "action2"],
-  "longTerm": ["action1", "action2"],
-  "nextStep": "Single most important next action"
-}`;
+Return JSON only:
+{"summary":"brief summary","quickWins":["action1","action2","action3"],"strategic":["action1","action2"],"longTerm":["action1","action2"],"nextStep":"most important action"}`;
 
 module.exports = async function handler(req, res) {
   // Handle CORS
@@ -62,8 +43,8 @@ module.exports = async function handler(req, res) {
       const prompt = QUESTIONS_PROMPT.replace('{problem}', problem);
 
       const message = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1024,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
         messages: [
           { role: 'user', content: prompt }
         ]
@@ -102,8 +83,8 @@ module.exports = async function handler(req, res) {
         .replace('{qa_pairs}', qaPairs);
 
       const message = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2048,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 768,
         messages: [
           { role: 'user', content: prompt }
         ]

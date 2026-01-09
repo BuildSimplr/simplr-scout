@@ -76,9 +76,11 @@ Submitted at ${new Date().toISOString()}
     `;
 
     // Send email via Resend
+    // Using Resend's default sender - no domain verification needed
+    // Update 'to' address to your actual email that works
     const { data, error } = await resend.emails.send({
-      from: 'Simplr Scout <notifications@buildsimplr.com>',
-      to: ['hello@buildsimplr.com'],
+      from: 'Simplr Scout <onboarding@resend.dev>',
+      to: [process.env.NOTIFICATION_EMAIL || 'hello@buildsimplr.com'],
       replyTo: email,
       subject: `New Consultation Request: ${name}`,
       html: emailHtml,

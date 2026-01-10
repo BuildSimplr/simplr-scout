@@ -1,70 +1,167 @@
-# Getting Started with Create React App
+# Simplr Scout
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+AI-powered business problem solver that helps identify challenges and delivers actionable, domain-specific recommendations.
 
-## Available Scripts
+**Live Demo:** [simplr-scout.vercel.app](https://simplr-scout.vercel.app)
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+- **3-Step Discovery Flow** - Problem input → Clarifying questions → Personalized recommendations
+- **Domain-Specific AI** - Recommends actual tools, vendors, and pricing (not generic advice)
+- **Lead Capture** - Email gate before showing results + consultation booking form
+- **Real-time Analysis** - Powered by Claude AI (Haiku 4.5)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Tech Stack
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **Frontend:** React 19, Tailwind CSS, Framer Motion, Lucide Icons
+- **AI:** Claude Haiku 4.5 (Anthropic API)
+- **Backend:** Vercel Serverless Functions
+- **Email:** Resend
+- **Deployment:** Vercel
 
-### `npm test`
+## Architecture
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        SIMPLR SCOUT STATE MACHINE                           │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-### `npm run build`
+┌──────────────┐
+│   App.js     │
+│              │
+│ showDiscovery│───── false ────►┌─────────────────┐
+│   (state)    │                 │   LandingPage   │
+│              │◄── onBack ──────│                 │
+└──────┬───────┘                 │  • Hero         │
+       │                         │  • How it works │
+       │ true                    │  • CTA section  │
+       │                         └────────┬────────┘
+       ▼                                  │
+┌──────────────┐                 onStartAnalysis()
+│ DiscoveryFlow│◄─────────────────────────┘
+│              │
+│  step (1-3)  │
+│  problem     │
+│  questions   │
+│  answers     │
+│  recommendations
+│  showEmailCapture
+│  isLoading   │
+└──────┬───────┘
+       │
+       ▼
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+     STEP 1                    STEP 2                      STEP 3
+┌─────────────┐          ┌──────────────────┐        ┌─────────────────┐
+│ ProblemInput│          │ClarifyingQuestions│        │ Recommendations │
+│             │          │                  │        │                 │
+│ [textarea]  │          │ Q1: [input]      │        │ • Summary       │
+│             │          │ Q2: [input]      │        │ • #1 Next Step  │
+│ Examples:   │          │ Q3: [input]      │        │ • Quick Wins    │
+│ • VOIP      │          │ Q4: [input]      │        │ • Strategic     │
+│ • CRM       │          │ Q5: [input]      │        │ • Long-term     │
+│ • Website   │          │                  │        │                 │
+└──────┬──────┘          └────────┬─────────┘        └────────┬────────┘
+       │                          │                           │
+       │ onSubmit(problem)        │ onSubmit(answers)         │ "Book Free
+       ▼                          ▼                           │  Consultation"
+┌─────────────┐          ┌─────────────────┐                  ▼
+│  LOADING    │          │  EmailCapture   │         ┌─────────────────┐
+│             │          │     MODAL       │         │ Consultation    │
+│ POST /api/  │          │                 │         │     MODAL       │
+│   analyze   │          │ [email input]   │         │                 │
+│             │          │                 │         │ • Name *        │
+│ type:       │          │ "Your Solutions │         │ • Email *       │
+│ "questions" │          │  Are Ready!"    │         │ • Phone         │
+└──────┬──────┘          └────────┬────────┘         │ • Message       │
+       │                          │                  └────────┬────────┘
+       │ success                  │ onSubmit(email)           │
+       ▼                          ▼                           │ onSubmit
+   step = 2              ┌─────────────┐                      ▼
+                         │  LOADING    │             ┌─────────────────┐
+                         │             │             │ POST /api/      │
+                         │ POST /api/  │             │   submit-lead   │
+                         │   analyze   │             │                 │
+                         │             │             │ → Resend email  │
+                         │ type:       │             │ → Console log   │
+                         │ "recommend" │             └────────┬────────┘
+                         └──────┬──────┘                      │
+                                │                             │ success
+                                │ success                     ▼
+                                ▼                    ┌─────────────────┐
+                            step = 3                 │ "Request        │
+                                                     │  Submitted!"    │
+                                                     └─────────────────┘
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### API Endpoints
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/analyze` | POST | Generate clarifying questions or recommendations via Claude AI |
+| `/api/submit-lead` | POST | Submit consultation request, sends email via Resend |
 
-### `npm run eject`
+### Component Tree
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```
+App
+ ├── LandingPage
+ │
+ └── DiscoveryFlow
+      ├── StepIndicator
+      ├── ProblemInput (step 1)
+      ├── ClarifyingQuestions (step 2)
+      ├── Recommendations (step 3)
+      │    └── ConsultationModal
+      └── EmailCapture (modal overlay)
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Setup
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Prerequisites
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- Node.js 18+
+- Anthropic API key
+- Resend API key (for email notifications)
 
-## Learn More
+### Installation
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+git clone https://github.com/BuildSimplr/simplr-scout.git
+cd simplr-scout
+npm install
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Environment Variables
 
-### Code Splitting
+Create a `.env.local` file:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+RESEND_API_KEY=re_...
+NOTIFICATION_EMAIL=your-email@example.com
+```
 
-### Analyzing the Bundle Size
+### Development
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```bash
+npm start
+```
 
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Note: API routes only work when deployed to Vercel. For local development, the app uses fallback mock data.
 
 ### Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```bash
+npx vercel --prod
+```
 
-### `npm run build` fails to minify
+Add environment variables in Vercel dashboard under Project Settings → Environment Variables.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## License
+
+MIT
+
+---
+
+Part of the [BuildSimplr](https://buildsimplr.github.io) portfolio.
